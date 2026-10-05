@@ -446,5 +446,5 @@ Mỗi bước chuyển trạng thái trong ma trận quy hoạch động DTW man
    - Hiểu sâu sắc bản chất vật lý và sinh học của các đại lượng âm học: tại sao năng lượng và ZCR lại có sự hoán đổi giữa âm hữu thanh và âm vô thanh; tại sao thang tần số Mel và hàm log lại phản ánh đúng cơ chế ốc tai người.
    - Nắm vững cơ chế bù trừ thời gian phi tuyến tính của giải thuật DTW và thấy rõ ranh giới giữa phương pháp đối sánh mẫu truyền thống với các mô hình xác suất thống kê nâng cao (HMM/DNN) sẽ được học ở Chương 3.
 3. **Tính sẵn sàng của sản phẩm nộp:**
-   - Mã nguồn trong [Lab2_2351260662.ipynb](file:///d:/Lab02_2351260662_LeThiThuyLinh/Lab2_2351260662.ipynb) chạy độc lập từ đầu đến cuối không phụ thuộc biến ngoài.
-   - Toàn bộ kết quả định lượng được lưu minh bạch trong [results.csv](file:///d:/Lab02_2351260662_LeThiThuyLinh/results.csv) và toàn bộ biểu đồ khoa học độ phân giải cao được lưu tại [figures/](file:///d:/Lab02_2351260662_LeThiThuyLinh/figures).
+   - Mã nguồn trong [Lab2_2351260662.ipynb](./Lab2_2351260662.ipynb) chạy độc lập từ đầu đến cuối không phụ thuộc biến ngoài.
+   - Toàn bộ kết quả định lượng được lưu minh bạch trong [results.csv](./results.csv) và toàn bộ biểu đồ khoa học độ phân giải cao được lưu tại [figures/](./figures/).
