@@ -279,7 +279,7 @@ Hệ thống lưu trữ 3 templates đại diện cho mỗi từ trong từ đi�
 $$T = \{ T_{w, r} \mid w \in \{\text{'khong'}, \text{'mot'}, \text{'hai'}, \text{'ba'}, \text{'bon'}\}, \; r \in \{1, 2, 3\} \}$$
 
 Với một file âm thanh kiểm tra $X$:
-1. Trích xuất vector đặc trưng $X = \text{mfcc\_feature}(\text{trim}(X))$.
+1. Trích xuất vector đặc trưng $$X = \text{mfcc\_feature}(\text{trim}(X))$$.
 2. Tính khoảng cách DTW chuẩn hóa đến tất cả các template của từng từ $w$, lấy khoảng cách cực tiểu làm đại diện cho từ đó:
    $$D_w(X) = \min_{r \in \{1, 2, 3\}} \text{DTW}_{\text{norm}}(X, T_{w, r})$$
 3. Gán nhãn dự đoán cho từ có khoảng cách nhỏ nhất:
