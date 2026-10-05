@@ -181,7 +181,7 @@ $$
 ### 3.3. Phân tích Ước lượng Tần số Cao độ Pitch $F_0$ (Hình 3)
 
 ![Hình 3: Hàm tự tương quan và Pitch](figures/fig3_autocorrelation.png)
-*Hình 3: Hàm tự tương quan ngắn hạn $R[k]$ trên khung nguyên âm /a/ của từ 'ba' và vị trí đỉnh pitch.*
+*Hình 3: Hàm tự tương quan ngắn hạn R[k] trên khung nguyên âm /a/ của từ 'ba' và vị trí đỉnh pitch.*
 
 #### Kết quả phân tích Pitch:
 - Khung phân tích được trích xuất tại trung tâm đoạn nguyên âm hữu thanh /a/ của từ `'ba'`.
@@ -347,7 +347,7 @@ Loại bỏ đáp ứng tĩnh của micro và kênh truyền, giúp hệ thống
 ### 6.1. Thuật toán Quy hoạch Động DTW Tự Cài đặt
 Thuật toán so khớp chuỗi vector $X = (x_1, \dots, x_N)$ và $Y = (y_1, \dots, y_M)$ được cài đặt từng bước từ công thức gốc:
 
-#### 1. Ma trận khoảng cách cục bộ Euclid $C$:
+#### 1. Ma trận khoảng cách cục bộ Euclid C:
 Với hai chuỗi vector đặc trưng $X = (x_1, x_2, \dots, x_N)$ và $Y = (y_1, y_2, \dots, y_M)$ ($x_i, y_j \in \mathbb{R}^D$):
 
 $$
