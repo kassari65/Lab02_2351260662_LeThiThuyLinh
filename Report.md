@@ -52,10 +52,10 @@ Toàn bộ các bước thực nghiệm trong bài thực hành tuân thủ nghi
 | **Bộ lọc tiền nhấn ($\alpha$)** | $\alpha = 0.97$ | $y[n] = x[n] - 0.97 x[n-1]$: bộ lọc thông cao bậc nhất bù đắp suy giảm năng lượng tự nhiên của dải tần số cao (~$-6$ dB/octave) do bức xạ âm môi. |
 | **Kích thước FFT ($N_{\text{FFT}}$)** | $512$ điểm | Lũy thừa của 2 gần nhất lớn hơn $L = 400$, cho phép tính toán Fast Fourier Transform tối ưu và độ phân giải tần số $\Delta f = 16000 / 512 = 31.25$ Hz/bin. |
 | **Số bộ lọc Mel ($M$)** | $24$ bộ lọc | Nằm trong dải chuẩn $24 - 40$ bộ lọc; phân giải dày ở tần số thấp và rộng dần ở tần số cao mô phỏng ốc tai người. |
-| **Số hệ số MFCC ($N_{\text{mfcc}}$)** | $13$ hệ số | Thu nhận 13 hệ số cepstral đầu tiên đại diện cho hình dạng đường bao phổ (vocal tract), loại bỏ thông tin cao độ pitch. |
+| **Số hệ số MFCC ($N_{\mathrm{mfcc}}$)** | $13$ hệ số | Thu nhận 13 hệ số cepstral đầu tiên đại diện cho hình dạng đường bao phổ (vocal tract), loại bỏ thông tin cao độ pitch. |
 | **Chuẩn hóa phổ (CMN)** | Per-utterance CMN | Trừ trung bình phổ của từng từ để loại bỏ đáp ứng xung tuyến tính của micro thu âm và kênh truyền. |
 | **Hàm khoảng cách cục bộ** | Euclidean distance | $d(x_i, y_j) = \|x_i - y_j\|_2$: tính khoảng cách hình học giữa 2 vector MFCC 13 chiều tại mỗi cặp khung. |
-| **Chuẩn hóa chi phí DTW** | $D[N, M] / \|P\|$ | Chia tổng chi phí tích lũy cho độ dài đường căn chỉnh $|P|$ để loại bỏ thiên lệch khiến các từ có thời lượng dài luôn bị tính chi phí cao. |
+| **Chuẩn hóa chi phí DTW** | $D[N, M] / |P|$ | Chia tổng chi phí tích lũy cho độ dài đường căn chỉnh $|P|$ để loại bỏ thiên lệch khiến các từ có thời lượng dài luôn bị tính chi phí cao. |
 
 ---
 
@@ -71,7 +71,7 @@ Quy tắc phân chia tập dữ liệu được thực hiện nghiêm ngặt tr�
 
 ### 2.2. Chuẩn hóa Biên độ Tín hiệu (`load_audio`)
 Tín hiệu được đọc qua `librosa.load(path, sr=16000, mono=True)` và thực hiện chuẩn hóa cực đại (peak amplitude normalization):
-$$y[n] = \frac{x[n]}{\max(|x[n]|) + \varepsilon}, \quad \varepsilon = 10^{-9}$$
+$$y[n] = \frac{x[n]}{\max_{m} |x[m]| + \varepsilon}, \quad \varepsilon = 10^{-9}$$
 Phép chuẩn hóa này đưa toàn bộ biên độ mẫu về phạm vi $[-1.0, +1.0]$, giúp loại bỏ sự chênh lệch âm lượng ngẫu nhiên giữa các lần phát âm do người nói đứng xa/gần micro.
 
 ### 2.3. Phân tích Chi tiết Biểu đồ Dạng sóng Waveform (Hình 1)
@@ -96,21 +96,25 @@ Phép chuẩn hóa này đưa toàn bộ biên độ mẫu về phạm vi $[-1.0
 ## 3. Phần B: Đặc trưng Miền Thời gian & Phân tích Âm học (Hình 2 & Hình 3)
 
 ### 3.1. Cơ sở Lý thuyết & Công thức Cài đặt
-Tín hiệu tiếng nói $x[n]$ được phân tích theo từng khung $L = 400$ mẫu, bước nhảy $R = 160$ mẫu. Cửa sổ Hamming được áp dụng:
+Tín hiệu tiếng nói $x[n]$ được phân tích theo từng khung với độ dài $T_f = 25\text{ ms}$ ($L = 400$ mẫu) và bước nhảy $T_h = 10\text{ ms}$ ($R = 160$ mẫu):
+$$L = \mathrm{round}(F_s \cdot T_f), \quad R = \mathrm{round}(F_s \cdot T_h)$$
+Cửa sổ Hamming được áp dụng cho từng khung $r$:
 $$w[n] = 0.54 - 0.46 \cos\left(\frac{2\pi n}{L-1}\right), \quad 0 \le n \le L-1$$
-$$x_r[n] = x[rR + n] \cdot w[n]$$
+$$x_r[n] = x[rR + n] \cdot w[n], \quad 0 \le n \le L-1$$
 
-Các đặc trưng miền thời gian được tự cài đặt từ định nghĩa toán học:
+Các đặc trưng miền thời gian được tự cài đặt từ định nghĩa toán học (theo giáo trình Rabiner & Schafer):
 1. **Năng lượng ngắn hạn (Short-Time Energy):**
    $$E_r = \sum_{n=0}^{L-1} x_r^2[n]$$
-2. **Năng lượng Log (Log-Energy in dB):**
-   $$E_r(\text{dB}) = 10 \log_{10}(E_r + \varepsilon), \quad \varepsilon = 10^{-12}$$
-3. **Giá trị hiệu dụng (RMS - Root Mean Square):**
-   $$\mathrm{RMS}_r = \sqrt{\frac{1}{L} \sum_{n=0}^{L-1} x_r^2[n]}$$
-4. **Tốc độ đổi dấu (Zero-Crossing Rate - ZCR):**
-   $$Z_r = \frac{1}{2L} \sum_{m=1}^{L-1} |\text{sgn}(x[m]) - \text{sgn}(x[m-1])|, \quad \text{sgn}(x) = \begin{cases} +1, & x \ge 0 \\ -1, & x < 0 \end{cases}$$
-5. **Hàm tự tương quan ngắn hạn (Short-time Autocorrelation):**
-   $$R_r[k] = \sum_{n=0}^{L-1-k} x_r[n] \cdot x_r[n+k]$$
+2. **Độ lớn biên độ ngắn hạn (Short-Time Magnitude):**
+   $$M_r = \sum_{n=0}^{L-1} |x_r[n]|$$
+3. **Giá trị hiệu dụng (Root Mean Square - RMS):**
+   $$\mathrm{RMS}_r = \sqrt{\frac{1}{L} \sum_{n=0}^{L-1} x_r^2[n]} = \sqrt{\frac{E_r}{L}}$$
+4. **Năng lượng Log (Log-Energy in dB):**
+   $$E_r(\mathrm{dB}) = 10 \log_{10}(E_r + \varepsilon), \quad \varepsilon = 10^{-12}$$
+5. **Tốc độ đổi dấu (Zero-Crossing Rate - ZCR):**
+   $$Z_r = \frac{1}{2L} \sum_{n=1}^{L-1} |\mathrm{sgn}(x_r[n]) - \mathrm{sgn}(x_r[n-1])|, \quad \mathrm{sgn}(x) = \begin{cases} +1, & x \ge 0 \\ -1, & x < 0 \end{cases}$$
+6. **Hàm tự tương quan ngắn hạn (Short-Time Autocorrelation):**
+   $$R_r[k] = \sum_{n=0}^{L-1-k} x_r[n] \cdot x_r[n+k], \quad 0 \le k < L$$
 
 ### 3.2. Phân tích Chi tiết Biểu đồ Đặc trưng Miền Thời gian (Hình 2)
 
@@ -139,11 +143,11 @@ Các đặc trưng miền thời gian được tự cài đặt từ định ngh
 - Khung phân tích được trích xuất tại trung tâm đoạn nguyên âm hữu thanh /a/ của từ `'ba'`.
 - Đỉnh tự tương quan chính $R[0]$ tương ứng với năng lượng toàn khung tại độ trễ lag $k=0$.
 - Bỏ qua vùng lân cận gốc $k=0$, đỉnh cực đại thứ hai xuất hiện rõ rệt tại độ trễ:
-  $$N_0 = 118 \text{ mẫu}$$
-- Ở tần số lấy mẫu $F_s = 16,000$ Hz, chu kỳ pitch tương ứng là:
-  $$T_0 = \frac{N_0}{F_s} = \frac{118}{16000} \approx 7.375 \text{ ms}$$
+  $$N_0 = 118 \; (\text{mẫu})$$
+- Ở tần số lấy mẫu $F_s = 16,000\text{ Hz}$, chu kỳ pitch tương ứng là:
+  $$T_0 = \frac{N_0}{F_s} = \frac{118}{16000} \approx 7.375\text{ ms}$$
 - Ước lượng tần số cơ bản (Pitch / Fundamental Frequency $F_0$):
-  $$F_0 \approx \frac{F_s}{N_0} = \frac{16000}{118} \approx 135.59 \text{ Hz}$$
+  $$F_0 \approx \frac{F_s}{N_0} = \frac{16000}{118} \approx 135.59\text{ Hz}$$
 - **Ý nghĩa sinh học:** Tần số cơ bản $F_0 \approx 135.6$ Hz nằm hoàn toàn chính xác trong dải cao độ tự nhiên của giọng nam trưởng thành ($85 - 155$ Hz), minh chứng rằng hàm tự tương quan $R[k]$ tự cài đặt đã nắm bắt chính xác chu kỳ dao động của dây thanh âm.
 
 ---
@@ -153,7 +157,7 @@ Các đặc trưng miền thời gian được tự cài đặt từ định ngh
 ### 4.1. Cơ chế Hoạt động của Thuật toán Cắt tỉa Khoảng lặng
 Việc để nguyên khoảng lặng đầu/cuối sẽ khiến ma trận DTW tốn tài nguyên căn chỉnh các đoạn tĩnh lặng vô nghĩa, làm sai lệch đường căn chỉnh và tăng mạnh khoảng cách tích lũy. Thuật toán `trim_energy` được cài đặt kết hợp:
 1. **Ngưỡng năng lượng tương đối (`top_db = 30 dB`):** Xác định ranh giới thô của vùng tiếng nói bằng cách tìm điểm đầu và điểm cuối mà tại đó năng lượng tụt xuống quá $30$ dB so với năng lượng đỉnh cực đại của utterance.
-2. **Dải đệm biên an toàn (`margin_ms = 50 ms`):** Tương đương $m = \frac{16000 \times 50}{1000} = 800$ mẫu. Ranh giới bắt đầu được lùi ra trước $50$ ms ($s = \max(0, \text{idx}_0 - m)$) và ranh giới kết thúc được nới về sau $50$ ms ($e = \min(L_y, \text{idx}_1 + m)$).
+2. **Dải đệm biên an toàn (`margin_ms = 50 ms`):** Tương đương $m = \mathrm{round}\left(\frac{F_s \cdot \mathrm{margin\_ms}}{1000}\right) = \frac{16000 \times 50}{1000} = 800$ mẫu. Ranh giới bắt đầu được lùi ra trước $50$ ms ($s = \max(0, \mathrm{idx}_0 - m)$) và ranh giới kết thúc được nới về sau $50$ ms ($e = \min(L_y, \mathrm{idx}_1 + m)$).
 3. **Bảo toàn phụ âm yếu:** Dải đệm $50$ ms đảm bảo bao bọc trọn vẹn các phụ âm xát đầu (/kh/, /h/) và âm tắc đuôi (/t/) có năng lượng yếu nằm sát mức nền mà không sợ bị cắt lẹm.
 
 ### 4.2. Bảng Thống kê Hiệu quả Cắt tỉa Khoảng lặng
@@ -195,23 +199,31 @@ Tín hiệu x[n]
    ──> Vector MFCC cuối cùng (T frames, 13 chiều)
 ```
 
-1. **Bộ lọc tiền nhấn (Pre-emphasis):** Tiếng nói con người bức xạ qua môi bị suy giảm tần số cao theo quy luật $-6$ dB/quãng tám (octave). Bộ lọc FIR bậc nhất $H(z) = 1 - 0.97 z^{-1}$ có đáp ứng tần số tăng dần về phía tần số cao, giúp cân bằng lại phổ năng lượng, làm cho các formant tần số cao ($F_2, F_3$) có trọng số bình đẳng với $F_1$ trong không gian khoảng cách.
-2. **Cửa sổ hóa Hamming (Hamming Windowing):** Cắt khung 25 ms, hop 10 ms. Cửa sổ Hamming làm mượt hai biên của khung về mức 0, giảm tối đa hiệu ứng rò rỉ phổ (spectral leakage) khi tính biến đổi Fourier.
-3. **Phổ công suất (Power Spectrum):** Biến đổi Fourier nhanh 512 điểm chuyển tín hiệu từ miền thời gian sang miền phổ tần số với các vạch phổ có khoảng cách $31.25$ Hz. Phổ công suất $P_r[k]$ loại bỏ hoàn toàn thông tin pha (phase) vốn không mang giá trị ngữ âm học.
-4. **Bộ lọc Mel (Mel Filterbank - 24 filters):** Thang Mel được định nghĩa theo công thức Huang–Acero–Hon:
+1. **Bộ lọc tiền nhấn (Pre-emphasis):** Tiếng nói con người bức xạ qua môi bị suy giảm tần số cao theo quy luật $-6$ dB/quãng tám (octave). Bộ lọc FIR bậc nhất với hệ số $\alpha = 0.97$:
+   $$y[n] = x[n] - \alpha x[n-1], \quad H(z) = 1 - \alpha z^{-1}$$
+   Đáp ứng tần số tăng dần về phía tần số cao, giúp cân bằng lại phổ năng lượng, làm cho các formant tần số cao ($F_2, F_3$) có trọng số tương đương với $F_1$ trong không gian khoảng cách.
+2. **Cửa sổ hóa Hamming (Hamming Windowing):** Cắt khung $T_f = 25\text{ ms}$ ($L = 400$ mẫu), bước dịch $T_h = 10\text{ ms}$ ($R = 160$ mẫu):
+   $$x_r[n] = y[rR + n] \cdot w[n], \quad 0 \le n \le L-1$$
+   Cửa sổ Hamming triệt tiêu hiện tượng gián đoạn ở hai biên khung, giảm tối đa hiệu ứng rò rỉ phổ (spectral leakage).
+3. **Biến đổi Fourier rời rạc và Phổ công suất (Power Spectrum):** Biến đổi FFT $N_{\mathrm{FFT}} = 512$ điểm:
+   $$X_r[k] = \sum_{n=0}^{N_{\mathrm{FFT}}-1} x_r[n] \, e^{-j \frac{2\pi k n}{N_{\mathrm{FFT}}}}, \quad 0 \le k < N_{\mathrm{FFT}}$$
+   Phổ công suất loại bỏ hoàn toàn thông tin pha (phase):
+   $$P_r[k] = \frac{1}{N_{\mathrm{FFT}}} |X_r[k]|^2$$
+4. **Bộ lọc Mel (Mel Filterbank - $M = 24$ filters):** Thang Mel được định nghĩa theo Huang–Acero–Hon:
    $$B(f) = 1125 \ln\left(1 + \frac{f}{700}\right) \quad \Longleftrightarrow \quad f = 700 \left(e^{B/1125} - 1\right)$$
    - Ở dải $0 - 1000$ Hz: Băng thông các bộ lọc rất hẹp (~$100$ Hz) và dày đặc, tương ứng với khả năng phân biệt cao độ cực nhạy của tai người.
-   - Ở dải $> 1000$ Hz: Băng thông các bộ lọc giãn rộng dần theo hàm mũ, phản ánh việc tai người chỉ cảm nhận tỷ lệ tần số chứ không nhận biết được sai lệch tần số tuyệt đối ở dải cao.
-5. **Nén Logarithm (Log Compression):** 
-   - Mô phỏng cảm nhận độ to phi tuyến (loudness perception) theo định luật Weber-Fechner (tai người nhạy cảm với tỉ số năng lượng thay vì chênh lệch tuyệt đối).
-   - Biến phép nhân tích chập của mô hình nguồn-bộ lọc ($S(f) = E(f) \cdot H(f)$) thành phép cộng trong miền log: $\ln |S(f)| = \ln |E(f)| + \ln |H(f)|$.
+   - Ở dải $> 1000$ Hz: Băng thông các bộ lọc giãn rộng dần theo hàm mũ, phản ánh đặc tính thính giác chỉ cảm nhận tỉ số tần số.
+5. **Nén Logarithm và Năng lượng Bộ lọc Mel (Log Filterbank Energies):** 
+   Năng lượng log qua $M$ bộ lọc tam giác $H_m[k]$ ($0 \le m < M$):
+   $$S_r[m] = \ln\left( \sum_{k=0}^{N_{\mathrm{FFT}}/2} P_r[k] H_m[k] + \varepsilon \right)$$
+   Phép log mô phỏng cảm nhận độ to phi tuyến theo định luật Weber-Fechner và phân tách tích chập nguồn-bộ lọc: $\ln |S(f)| = \ln |E(f)| + \ln |H(f)|$.
 6. **Biến đổi Cosine Rời rạc (DCT-II):**
-   $$c_r[n] = \sum_{m=0}^{M-1} S_r[m] \cos\left(\frac{\pi n (m + 0.5)}{M}\right), \quad 0 \le n < N_{\text{mfcc}}$$
-   - Phép biến đổi DCT khử tương quan (decorrelation) cực kỳ hiệu quả giữa các bộ lọc Mel lân cận, tạo ra các hệ số gần như độc lập tuyến tính với nhau (cho phép dùng khoảng cách Euclidean đơn giản thay vì khoảng cách Mahalanobis phức tạp).
-   - Nén năng lượng tập trung vào 13 hệ số thấp đại diện cho cấu trúc ống thanh âm (vocal tract), loại bỏ các dao động nhanh tần số cao đại diện cho nguồn thanh quản (pitch).
+   $$c_r[n] = \sum_{m=0}^{M-1} S_r[m] \cos\left(\frac{\pi n (m + 0.5)}{M}\right), \quad 0 \le n < N_{\mathrm{mfcc}}$$
+   - Phép biến đổi DCT khử tương quan (decorrelation) giữa các kênh Mel lân cận, tạo ra các hệ số độc lập tuyến tính (cho phép dùng khoảng cách Euclid).
+   - Nén năng lượng tập trung vào 13 hệ số thấp đại diện cho cấu trúc ống thanh âm (vocal tract), loại bỏ pitch ở các bậc cao.
 7. **Chuẩn hóa Trung bình Phổ (Cepstral Mean Normalization - CMN):**
-   $$c_r[n] \leftarrow c_r[n] - \frac{1}{T}\sum_{t=1}^T c_t[n]$$
-   - Loại bỏ đáp ứng tĩnh của micro và kênh truyền, giúp hệ thống bền vững hơn với nhiễu đường truyền.
+   $$c_r[n] \leftarrow c_r[n] - \mu_n, \quad \text{với } \mu_n = \frac{1}{T}\sum_{t=1}^T c_t[n]$$
+   Loại bỏ đáp ứng tĩnh của micro và kênh truyền, giúp hệ thống bền vững hơn với nhiễu đường truyền.
 
 ### 5.2. Phân tích Chi tiết Bản đồ Nhiệt MFCC Heatmap (Hình 5)
 
@@ -238,24 +250,27 @@ Tín hiệu x[n]
 Thuật toán so khớp chuỗi vector $X = (x_1, \dots, x_N)$ và $Y = (y_1, \dots, y_M)$ được cài đặt từng bước từ công thức gốc:
 
 #### 1. Ma trận khoảng cách cục bộ Euclid $C$:
-$$C[i, j] = \|x_i - y_j\|_2 = \sqrt{\sum_{q=0}^{D-1} (x_i[q] - y_j[q])^2}, \quad 0 \le i < N, \; 0 \le j < M$$
+Với hai chuỗi vector đặc trưng $X = (x_1, x_2, \dots, x_N)$ và $Y = (y_1, y_2, \dots, y_M)$ ($x_i, y_j \in \mathbb{R}^D$):
+$$C[i, j] = d(x_i, y_j) = \|x_i - y_j\|_2 = \sqrt{\sum_{q=1}^{D} (x_i[q] - y_j[q])^2}, \quad 1 \le i \le N, \; 1 \le j \le M$$
 
-#### 2. Ma trận chi phí tích lũy $D$ và Quy tắc chuyển bước:
-Khởi tạo ma trận $D$ kích thước $(N+1) \times (M+1)$ với $D[0, 0] = 0$ và tất cả các ô biên khác bằng $+\infty$.  
-Với mỗi ô $(i, j)$ từ $1$ đến $N$ và $1$ đến $M$:
-$$D[i, j] = C[i-1, j-1] + \min \begin{cases} 
-D[i-1, j]   & (\text{bước dọc: kéo dài } X) \\ 
-D[i, j-1]   & (\text{bước ngang: kéo dài } Y) \\ 
-D[i-1, j-1] & (\text{bước chéo: căn chỉnh 1-1}) 
+#### 2. Ma trận chi phí tích lũy $D$ và Quy tắc chuyển bước (Dynamic Programming):
+Khởi tạo ma trận chi phí tích lũy $D$ kích thước $(N+1) \times (M+1)$ với điều kiện biên:
+$$D[0, 0] = 0, \quad D[i, 0] = +\infty \; (1 \le i \le N), \quad D[0, j] = +\infty \; (1 \le j \le M)$$
+Với mỗi ô $(i, j)$ ($1 \le i \le N$, $1 \le j \le M$), hệ thức quy hoạch động được tính như sau:
+$$D[i, j] = C[i, j] + \min \begin{cases} 
+D[i-1, j]   & (\text{bước dọc: chèn / kéo dài } X) \\ 
+D[i, j-1]   & (\text{bước ngang: xóa / kéo dài } Y) \\ 
+D[i-1, j-1] & (\text{bước chéo: căn chỉnh khớp } 1-1) 
 \end{cases}$$
-Đồng thời ghi nhận chỉ số ô trước đó vào ma trận truy vết `back[i, j]`.
+Đồng thời ghi nhận chỉ số ô nguồn tối ưu vào ma trận truy vết $\mathrm{back}[i, j]$.
 
 #### 3. Truy vết đường tối ưu (Backtracking):
-Bắt đầu từ ô góc trên cùng bên phải $(N, M)$, truy vết ngược theo `back[i, j]` về ô $(0, 0)$ để thu được chuỗi tọa độ optimal warping path $P = ((p_1, q_1), (p_2, q_2), \dots, (p_K, q_K))$.
+Bắt đầu từ ô đích $(N, M)$, truy vết ngược theo ma trận $\mathrm{back}[i, j]$ về gốc $(0, 0)$ để thu được chuỗi tọa độ optimal warping path:
+$$P = ((p_1, q_1), (p_2, q_2), \dots, (p_K, q_K)), \quad (p_1, q_1) = (1, 1), \; (p_K, q_K) = (N, M)$$
 
-#### 4. Chuẩn hóa theo chiều dài:
-$$\text{DTW}_{\text{norm}}(X, Y) = \frac{D[N, M]}{|P|}$$
-giúp chi phí DTW không bị ảnh hưởng bởi độ dài phát âm của từ.
+#### 4. Chuẩn hóa theo chiều dài đường căn chỉnh:
+$$\mathrm{DTW}_{\mathrm{norm}}(X, Y) = \frac{D[N, M]}{|P|}$$
+trong đó $|P| = K$ là tổng số bước căn chỉnh, giúp loại bỏ hoàn toàn thiên lệch thời lượng khi so khớp giữa các từ có độ dài phát âm khác nhau.
 
 ### 6.2. Phân tích Chi tiết Biểu đồ Ma trận Khoảng cách và Warping Path (Hình 6)
 
@@ -268,24 +283,26 @@ giúp chi phí DTW không bị ảnh hưởng bởi độ dài phát âm của t
 |:---|:---:|:---:|:---|
 | **Khoảng cách cục bộ $C[i, j]$** | Xuất hiện một dải thung lũng màu tím/xanh đậm ($C[i, j] < 5.0$) chạy dọc đường chéo. | Hầu như toàn bộ ma trận phủ màu xanh lá/vàng sáng ($C[i, j] > 15.0 - 25.0$). | Khẳng định các khung hình ở cùng vị trí âm vị của cùng một từ có đặc trưng phổ tương đồng vượt trội so với các từ khác nhau. |
 | **Đường căn chỉnh tối ưu (Warping Path)** | Bám cực kỳ sát đường chéo chính (diagonal line $i \approx j$). Độ dài path $|P| = 68$ bước. | Bị gấp khúc mạnh, chạy lệch xa đường chéo, xuất hiện nhiều đoạn nhảy bậc ngang/dọc dài. $|P| = 79$ bước. | Cùng từ chỉ bị co giãn nhẹ về tốc độ nói; khác từ buộc thuật toán phải gượng ép ghép cặp các âm vị không tương thích. |
-| **Chi phí chuẩn hóa $\text{DTW}_{\text{norm}}$** | **$12.389$** | **$22.304$** | **Chi phí khác từ tăng vọt gấp $1.80$ lần** so với cùng từ, tạo ra một biên an toàn phân tách (margin) cực kỳ lớn, đảm bảo bộ nhận dạng không bị nhầm lẫn. |
+| **Chi phí chuẩn hóa $\mathrm{DTW}_{\mathrm{norm}}$** | **$12.389$** | **$22.304$** | **Chi phí khác từ tăng vọt gấp $1.80$ lần** so với cùng từ, tạo ra một biên an toàn phân tách (margin) cực kỳ lớn, đảm bảo bộ nhận dạng không bị nhầm lẫn. |
 
 ---
 
 ## 7. Phần F & G: Bộ nhận dạng Nearest-Template, Ma trận Nhầm lẫn & Các Thí nghiệm (Hình 7)
 
 ### 7.1. Thuật toán Nhận dạng Nearest-Template
-Hệ thống lưu trữ 3 templates đại diện cho mỗi từ trong từ điển:
-$$T = \{ T_{w, r} \mid w \in \{\text{'khong'}, \text{'mot'}, \text{'hai'}, \text{'ba'}, \text{'bon'}\}, \; r \in \{1, 2, 3\} \}$$
+Hệ thống lưu trữ 3 templates tham chiếu đại diện cho mỗi từ trong từ điển:
+$$\mathcal{T} = \left\{ T_{w, r} \mid w \in \mathcal{V}, \; r \in \{1, 2, 3\} \right\}, \quad \mathcal{V} = \{\text{khong}, \text{mot}, \text{hai}, \text{ba}, \text{bon}\}$$
 
-Với một file âm thanh kiểm tra $X$:
-1. Trích xuất vector đặc trưng:
-   $$X = \mathrm{mfcc\_feature}(\text{trim}(X))$$.
-2. Tính khoảng cách DTW chuẩn hóa đến tất cả các template của từng từ $w$, lấy khoảng cách cực tiểu làm đại diện cho từ đó:
-   $$D_w(X) = \min_{r \in \{1, 2, 3\}} \mathrm{DTW}_{norm}(X, T_{w, r})$$
-3. Gán nhãn dự đoán cho từ có khoảng cách nhỏ nhất:
-   $$\hat{w} = \arg\min_{w} D_w(X)$$
-4. Cơ chế Rejection Threshold $\theta$: Nếu $\min_w D_w(X) > \theta$, hệ thống trả về nhãn `'unknown'`, giúp phát hiện các từ ngoài từ vựng hoặc tiếng ồn lạ. Dựa trên dữ liệu thực nghiệm, ngưỡng $\theta$ lý tưởng được chọn là $\theta = 19.0$ (nằm giữa dải Top-1 $\approx 11 - 15$ và Top-2 $\approx 21 - 34$).
+Với một file âm thanh kiểm tra $x$:
+1. **Trích xuất ma trận vector đặc trưng:** Sau khi cắt tỉa khoảng lặng (endpoint detection), tín hiệu được trích xuất ma trận MFCC:
+   $$\mathbf{X} = \mathrm{MFCC}(\mathrm{Trim}(x))$$
+2. **Tính khoảng cách cực tiểu đến từng lớp từ $w$:**
+   $$D_w(\mathbf{X}) = \min_{r \in \{1, 2, 3\}} \mathrm{DTW}_{\mathrm{norm}}(\mathbf{X}, T_{w, r})$$
+3. **Quyết định nhãn theo luật Nearest-Template:**
+   $$\hat{w} = \arg\min_{w \in \mathcal{V}} D_w(\mathbf{X})$$
+4. **Cơ chế ngưỡng từ chối (Rejection Threshold $\theta$):**
+   $$\hat{w}_{\mathrm{final}} = \begin{cases} \hat{w}, & \text{nếu } D_{\hat{w}}(\mathbf{X}) \le \theta \\ \text{unknown}, & \text{nếu } D_{\hat{w}}(\mathbf{X}) > \theta \end{cases}$$
+   Dựa trên dữ liệu thực nghiệm, ngưỡng $\theta$ lý tưởng được chọn là $\theta = 19.0$ (nằm giữa dải điểm Top-1 $\approx 10.9 - 15.9$ và Top-2 $\approx 21.2 - 34.3$), giúp loại bỏ chính xác các từ ngoài tập từ vựng hoặc tạp âm lạ.
 
 ### 7.2. Bảng Kết quả Nhận dạng Chi tiết trên Toàn bộ Tập Test (Trích từ `results.csv`)
 
@@ -309,7 +326,7 @@ Với một file âm thanh kiểm tra $X$:
 
 #### Đánh giá Hiệu năng Nhận dạng:
 - **Độ chính xác tổng thể (Accuracy):**
-  $$\text{Accuracy} = \frac{N_{\text{correct}}}{N_{\text{test}}} \times 100\% = \frac{10}{10} \times 100\% = \mathbf{100.0\%}$$
+  $$\mathrm{Accuracy} = \frac{N_{\mathrm{correct}}}{N_{\mathrm{test}}} \times 100\% = \frac{10}{10} \times 100\% = 100.0\%$$
 - Toàn bộ các giá trị dự đoán đều nằm hoàn hảo trên đường chéo chính của ma trận nhầm lẫn (mỗi từ đúng tuyệt đối $2/2$ mẫu test).
 - **Phân tích khoảng cách Top-2 (Cặp từ có khả năng nhầm lẫn cao nhất):**
   - Đối với từ `'ba'`, nhãn gần thứ nhì thường là `'bon'` với khoảng cách $\approx 25.05$.
@@ -321,8 +338,8 @@ Với một file âm thanh kiểm tra $X$:
 #### 1. Thí nghiệm Bắt buộc 1 (E1): Có Endpoint Detection (Trim) vs. Không Endpoint Detection (No-Trim)
 - **Mục đích:** Khảo sát tác động của khoảng lặng nền đối với độ chính xác và chi phí của DTW.
 - **Kết quả thực nghiệm:**
-  - Accuracy khi Có Trim: **$100.0\%$** | Chi phí $\text{DTW}_{\text{norm}}$ nội tại trung bình: **$13.41$**
-  - Accuracy khi Không Trim: **$100.0\%$** | Chi phí $\text{DTW}_{\text{norm}}$ nội tại trung bình: **$24.18$**
+  - Accuracy khi Có Trim: **$100.0\%$** | Chi phí $\mathrm{DTW}_{\mathrm{norm}}$ nội tại trung bình: **$13.41$**
+  - Accuracy khi Không Trim: **$100.0\%$** | Chi phí $\mathrm{DTW}_{\mathrm{norm}}$ nội tại trung bình: **$24.18$**
   - **Thời gian xử lý:** Phương pháp Có Trim nhanh gấp **$2.3$ lần** so với Không Trim.
 - **Phân tích bản chất:** Khi không cắt tỉa, khoảng lặng đầu và cuối chiếm tới hơn 40% số khung. DTW bị buộc phải căn chỉnh các đoạn tĩnh lặng có nhiễu nền ngẫu nhiên. Mặc dù trong môi trường phòng thí nghiệm ít nhiễu accuracy vẫn đạt 100%, nhưng chi phí tích lũy tăng gần gấp đôi và nguy cơ nhận dạng nhầm lẫn khi có tiếng ồn nền thực tế là cực kỳ cao.
 
@@ -331,7 +348,9 @@ Với một file âm thanh kiểm tra $X$:
 - **Kết quả thực nghiệm:**
   - Accuracy 13 MFCC cơ sở: **$100.0\%$** | Margin phân tách trung bình (Top-2 / Top-1): **$1.92 \times$**
   - Accuracy 13 MFCC + Delta (26 chiều): **$100.0\%$** | Margin phân tách trung bình (Top-2 / Top-1): **$2.15 \times$**
-- **Phân tích bản chất:** Vector Delta nắm bắt vận tốc biến thiên phổ $\Delta c_t = \frac{\sum_{n=1}^N n (c_{t+n} - c_{t-n})}{2 \sum_{n=1}^N n^2}$. Việc bổ sung Delta giúp mô tả chính xác giai đoạn chuyển tiếp âm học (formant transitions), giúp nới rộng biên phân tách an toàn giữa cặp từ dễ nhầm lẫn nhất là `ba` và `bon` từ $1.96 \times$ lên $2.28 \times$.
+- **Phân tích bản chất:** Vector Delta nắm bắt vận tốc biến thiên phổ:
+$$\Delta c_t = \frac{\sum_{n=1}^K n (c_{t+n} - c_{t-n})}{2 \sum_{n=1}^K n^2}$$
+với $K$ là bán kính cửa sổ hồi quy thời gian ($K = 2$). Việc bổ sung Delta giúp mô tả chính xác giai đoạn chuyển tiếp âm học (formant transitions), giúp nới rộng biên phân tách an toàn giữa cặp từ dễ nhầm lẫn nhất là `ba` và `bon` từ $1.96 \times$ lên $2.28 \times$.
 
 #### 3. Thí nghiệm Mở rộng 3 (E3): 1 Template duy nhất vs. 3 Templates mỗi từ
 - **Kết quả:** Cả hai cấu hình đều đạt $100.0\%$ accuracy trên tập test nội bộ. Tuy nhiên, cấu hình 3 templates có độ phương sai khoảng cách Top-1 nhỏ hơn $35\%$, chứng minh tính ổn định vượt trội khi người nói phát âm ở các trạng thái cảm xúc hoặc tốc độ nói khác nhau.
@@ -385,11 +404,13 @@ Mỗi bước chuyển trạng thái trong ma trận quy hoạch động DTW man
 ---
 
 ### Câu 6: Tại sao phải chuẩn hóa DTW cost theo path length khi so sánh các utterance có thời lượng khác nhau?
-- Chi phí tích lũy tại ô đích $D[N, M]$ là tổng dồn khoảng cách Euclid của toàn bộ các cặp khung trên đường đi $P$:
+- Chi phí tích lũy tại ô đích $D[N, M]$ là tổng dồn khoảng cách Euclid của toàn bộ các cặp khung trên đường căn chỉnh tối ưu $P$:
   $$D[N, M] = \sum_{k=1}^{|P|} d(x_{p_k}, y_{q_k})$$
-- Khi so sánh với một mẫu tham chiếu dài (ví dụ $|P| = 100$ bước), tổng chi phí sẽ tự nhiên lớn hơn rất nhiều so với khi so khớp với một mẫu tham chiếu ngắn (ví dụ $|P| = 45$ bước), ngay cả khi mức độ tương đồng của mẫu dài là vượt trội.
-- Nếu không chuẩn hóa, bộ nhận dạng sẽ bị **thiên lệch nặng nề (length bias)**, luôn có xu hướng chọn nhãn của những từ phát âm ngắn nhất (như từ 'ba').
-- Chuẩn hóa $\text{DTW}_{\text{norm}} = \frac{D[N, M]}{|P|}$ đưa chi phí về **khoảng cách trung bình trên một cặp khung**, đảm bảo sự công bằng tuyệt đối giữa các từ có độ dài khác nhau.
+- Khi so sánh với một mẫu tham chiếu dài (ví dụ $|P| = 100$ bước), tổng chi phí tích lũy sẽ tự nhiên lớn hơn rất nhiều so với khi so khớp với một mẫu tham chiếu ngắn (ví dụ $|P| = 45$ bước), ngay cả khi mức độ tương đồng của mẫu dài là vượt trội.
+- Nếu không chuẩn hóa, bộ nhận dạng sẽ bị **thiên lệch nặng nề theo chiều dài (length bias)**, luôn có xu hướng chọn nhãn của những từ phát âm ngắn nhất (như từ 'ba').
+- Chuẩn hóa khoảng cách DTW theo chiều dài đường đi:
+  $$\mathrm{DTW}_{\mathrm{norm}}(X, Y) = \frac{D[N, M]}{|P|}$$
+  đưa chi phí về **khoảng cách trung bình trên mỗi cặp khung**, đảm bảo tính khách quan và công bằng tuyệt đối khi so sánh giữa các từ có thời lượng phát âm khác nhau.
 
 ---
 
@@ -433,8 +454,8 @@ Mỗi bước chuyển trạng thái trong ma trận quy hoạch động DTW man
 | **Energy + ZCR** | Đồ thị 3 tầng đồng bộ thời gian (Hình 2) | Silence có $E < -35$ dB, ZCR ngẫu nhiên; Voiced có $E$ cực đại ($> -10$ dB), ZCR thấp ($< 0.12$); Unvoiced có $E$ trung bình-thấp, ZCR tăng vọt ($> 0.35$). |
 | **Endpoint Detection** | Giảm $42.6\%$ thời lượng file (Hình 4) | Cắt sạch khoảng lặng đầu/cuối; giữ trọn vẹn phụ âm xát đầu /kh/ và âm tắc đuôi /t/ nhờ dải đệm biên $50$ ms. |
 | **MFCC Heatmap** | Heatmap 13 hệ số x $T$ frames (Hình 5) | Thể hiện rõ sự biến thiên formant của nguyên âm đôi /ai/; số frame biến thiên theo thời lượng nhưng số chiều mỗi frame luôn cố định bằng 13. |
-| **DTW cùng từ** | $\text{DTW}_{\text{norm}} = 12.389$, Path bám sát đường chéo (Hình 6a) | Xuất hiện dải thung lũng chi phí thấp dọc đường chéo; đường căn chỉnh tối ưu bám sát đường chéo chính chứng minh độ tương đồng cao. |
-| **DTW khác từ** | $\text{DTW}_{\text{norm}} = 22.304$, Path gấp khúc lệch xa (Hình 6b) | Chi phí tăng vọt gấp **$1.80$ lần** so với cùng từ; đường căn chỉnh gấp khúc do các âm vị không tương thích. |
+| **DTW cùng từ** | $\mathrm{DTW}_{\mathrm{norm}} = 12.389$, Path bám sát đường chéo (Hình 6a) | Xuất hiện dải thung lũng chi phí thấp dọc đường chéo; đường căn chỉnh tối ưu bám sát đường chéo chính chứng minh độ tương đồng cao. |
+| **DTW khác từ** | $\mathrm{DTW}_{\mathrm{norm}} = 22.304$, Path gấp khúc lệch xa (Hình 6b) | Chi phí tăng vọt gấp **$1.80$ lần** so với cùng từ; đường căn chỉnh gấp khúc do các âm vị không tương thích. |
 | **Bộ nhận dạng** | **Accuracy = 100.0%** trên 10 mẫu test (Hình 7, `results.csv`) | Phân loại chính xác 10/10 file test độc lập; cặp từ gần nhau nhất là `ba` và `bon` với tỷ lệ phân tách an toàn đạt $> 1.96$ lần. |
 
 ---
