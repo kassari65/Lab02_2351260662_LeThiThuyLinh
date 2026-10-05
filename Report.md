@@ -106,7 +106,7 @@ Các đặc trưng miền thời gian được tự cài đặt từ định ngh
 2. **Năng lượng Log (Log-Energy in dB):**
    $$E_r(\text{dB}) = 10 \log_{10}(E_r + \varepsilon), \quad \varepsilon = 10^{-12}$$
 3. **Giá trị hiệu dụng (RMS - Root Mean Square):**
-   $$\text{RMS}_r = \sqrt{\frac{1}{L} \sum_{n=0}^{L-1} x_r^2[n]}$$
+   $$\mathrm{RMS}_r = \sqrt{\frac{1}{L} \sum_{n=0}^{L-1} x_r^2[n]}$$
 4. **Tốc độ đổi dấu (Zero-Crossing Rate - ZCR):**
    $$Z_r = \frac{1}{2L} \sum_{m=1}^{L-1} |\text{sgn}(x[m]) - \text{sgn}(x[m-1])|, \quad \text{sgn}(x) = \begin{cases} +1, & x \ge 0 \\ -1, & x < 0 \end{cases}$$
 5. **Hàm tự tương quan ngắn hạn (Short-time Autocorrelation):**
@@ -280,9 +280,9 @@ $$T = \{ T_{w, r} \mid w \in \{\text{'khong'}, \text{'mot'}, \text{'hai'}, \text
 
 Với một file âm thanh kiểm tra $X$:
 1. Trích xuất vector đặc trưng:
-   $$X = \text{mfcc\_feature}(\text{trim}(X))$$.
+   $$X = \mathrm{mfcc\_feature}(\text{trim}(X))$$.
 2. Tính khoảng cách DTW chuẩn hóa đến tất cả các template của từng từ $w$, lấy khoảng cách cực tiểu làm đại diện cho từ đó:
-   $$D_w(X) = \min_{r \in \{1, 2, 3\}} \text{DTW}_{\text{norm}}(X, T_{w, r})$$
+   $$D_w(X) = \min_{r \in \{1, 2, 3\}} \mathrm{DTW}_{norm}(X, T_{w, r})$$
 3. Gán nhãn dự đoán cho từ có khoảng cách nhỏ nhất:
    $$\hat{w} = \arg\min_{w} D_w(X)$$
 4. Cơ chế Rejection Threshold $\theta$: Nếu $\min_w D_w(X) > \theta$, hệ thống trả về nhãn `'unknown'`, giúp phát hiện các từ ngoài từ vựng hoặc tiếng ồn lạ. Dựa trên dữ liệu thực nghiệm, ngưỡng $\theta$ lý tưởng được chọn là $\theta = 19.0$ (nằm giữa dải Top-1 $\approx 11 - 15$ và Top-2 $\approx 21 - 34$).
