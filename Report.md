@@ -49,7 +49,7 @@ Toàn bộ các bước thực nghiệm trong bài thực hành tuân thủ nghi
 | **Độ dài khung** $T_f$ | 25 ms ($L = 400$ mẫu) | Đảm bảo giả thiết tựa dừng (quasi-stationary): trong khoảng 20 – 30 ms, cấu hình khẩu hình và dây thanh quản biến đổi không đáng kể. |
 | **Bước dịch khung** $T_h$ | 10 ms ($R = 160$ mẫu) | Tốc độ phân tích đạt 100 khung/giây. Độ chồng lấn giữa 2 khung liên tiếp là 15 ms (240 mẫu, 60%), giúp bắt kịp các chuyển đổi âm học nhanh. |
 | **Cửa sổ phân tích** | Hamming | $w[n] = 0.54 - 0.46 \cos\left(\frac{2\pi n}{L-1}\right)$: triệt tiêu hiện tượng gián đoạn ở hai mép khung, giảm rò rỉ phổ (spectral leakage) hiệu quả hơn cửa sổ chữ nhật. |
-| **Bộ lọc tiền nhấn ($\alpha$)** | $\alpha = 0.97$ | $y[n] = x[n] - 0.97 x[n-1]$: bộ lọc thông cao bậc nhất bù đắp suy giảm năng lượng tự nhiên của dải tần số cao (~-6 dB/octave) do bức xạ âm môi. |
+| **Bộ lọc tiền nhấn $\alpha$** | $\alpha = 0.97$ | $y[n] = x[n] - 0.97 x[n-1]$: bộ lọc thông cao bậc nhất bù đắp suy giảm năng lượng tự nhiên của dải tần số cao (~-6 dB/octave) do bức xạ âm môi. |
 | **Kích thước FFT** $N_{\mathrm{FFT}}$ | 512 điểm | Lũy thừa của 2 gần nhất lớn hơn $L = 400$, cho phép tính toán Fast Fourier Transform tối ưu và độ phân giải tần số $\Delta f = 16000 / 512 = 31.25$ Hz/bin. |
 | **Số bộ lọc Mel** $M$ | 24 bộ lọc | Nằm trong dải chuẩn 24 – 40 bộ lọc; phân giải dày ở tần số thấp và rộng dần ở tần số cao mô phỏng ốc tai người. |
 | **Số hệ số MFCC** $N_{\mathrm{mfcc}}$ | 13 hệ số | Thu nhận 13 hệ số cepstral đầu tiên đại diện cho hình dạng đường bao phổ (vocal tract), loại bỏ thông tin cao độ pitch. |
@@ -208,7 +208,13 @@ $$
 ### 4.1. Cơ chế Hoạt động của Thuật toán Cắt tỉa Khoảng lặng
 Việc để nguyên khoảng lặng đầu/cuối sẽ khiến ma trận DTW tốn tài nguyên căn chỉnh các đoạn tĩnh lặng vô nghĩa, làm sai lệch đường căn chỉnh và tăng mạnh khoảng cách tích lũy. Thuật toán `trim_energy` được cài đặt kết hợp:
 1. **Ngưỡng năng lượng tương đối (`top_db = 30 dB`):** Xác định ranh giới thô của vùng tiếng nói bằng cách tìm điểm đầu và điểm cuối mà tại đó năng lượng tụt xuống quá 30 dB so với năng lượng đỉnh cực đại của utterance.
-2. **Dải đệm biên an toàn (`margin_ms = 50 ms`):** Tương đương $m = \mathrm{round}\left(\frac{F_s \cdot \mathrm{margin\_ms}}{1000}\right) = \frac{16000 \times 50}{1000} = 800$ mẫu. Ranh giới bắt đầu được lùi ra trước 50 ms ($s = \max(0, \mathrm{idx}_0 - m)$) và ranh giới kết thúc được nới về sau 50 ms ($e = \min(L_y, \mathrm{idx}_1 + m)$).
+2. **Dải đệm biên an toàn (`margin_ms = 50 ms`):** Tương đương số mẫu đệm:
+
+$$
+m = \mathrm{round}\left(\frac{F_s \cdot \mathrm{margin\_ms}}{1000}\right) = \frac{16000 \times 50}{1000} = 800 \text{ (mẫu)}
+$$
+
+   Ranh giới bắt đầu được lùi ra trước 50 ms: $s = \max(0, \mathrm{idx}_0 - m)$ và ranh giới kết thúc được nới về sau 50 ms: $e = \min(L_y, \mathrm{idx}_1 + m)$.
 3. **Bảo toàn phụ âm yếu:** Dải đệm 50 ms đảm bảo bao bọc trọn vẹn các phụ âm xát đầu (/kh/, /h/) và âm tắc đuôi (/t/) có năng lượng yếu nằm sát mức nền mà không sợ bị cắt lẹm.
 
 ### 4.2. Bảng Thống kê Hiệu quả Cắt tỉa Khoảng lặng
