@@ -1,0 +1,68 @@
+# ==========================================
+# 1. Môi trường ảo Python (Virtual Environments)
+# ==========================================
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ==========================================
+# 2. Bộ nhớ đệm Python (Bytecode / Cache)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==========================================
+# 3. Jupyter Notebook Checkpoints & Cache
+# ==========================================
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# ==========================================
+# 4. Cấu hình IDE & Text Editor
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# 5. File hệ điều hành (Windows / macOS)
+# ==========================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# ==========================================
+# 6. File log & file tạm thời
+# ==========================================
+*.log
+scratch/
+tmp/
+temp/
